@@ -3,7 +3,9 @@ package main
 import (
 	"fmt"
 	"log"
+	"os"
 	"os/exec"
+	"runtime"
 	"strings"
 
 	"github.com/catsby/go-twitch/service/kraken"
@@ -11,11 +13,42 @@ import (
 )
 
 //audio_only, 160p, 360p, 480p, 720p, 720p60, 1080p
-var quality string = "480p"
+var quality = "480p"
 
-var chat bool = true
+var chat = true
 
 //var streamer string
+
+var clear map[string]func() //create a map for storing clear funcs
+
+func init() {
+	clear = make(map[string]func()) //Initialize it
+	clear["linux"] = func() {
+		cmd := exec.Command("clear") //Linux example, its tested
+		cmd.Stdout = os.Stdout
+		cmd.Run()
+	}
+	clear["darwin"] = func() {
+		cmd := exec.Command("clear") //Linux example, its tested
+		cmd.Stdout = os.Stdout
+		cmd.Run()
+	}
+	clear["windows"] = func() {
+		cmd := exec.Command("cmd", "/c", "cls") //Windows example, its tested
+		cmd.Stdout = os.Stdout
+		cmd.Run()
+	}
+}
+
+func callClear() {
+	value, ok := clear[runtime.GOOS] //runtime.GOOS -> linux, windows, darwin etc.
+	fmt.Println(runtime.GOOS)
+	if ok { //if we defined a clear func for that platform:
+		value() //we execute it
+	} else { //unsupported platform
+		panic("Your platform is unsupported! I can't clear terminal screen :(")
+	}
+}
 
 func main() {
 	client := kraken.DefaultClient(nil)
@@ -56,11 +89,18 @@ func main() {
 	streamer := strings.ToLower(answers.Streamer)
 	//r, _ := regexp.Compile(streamer)
 	//answer := r.FindString(answers.Streamer)
-	livestreamer := exec.Command("livestreamer", "twitch.tv/"+streamer, quality, "--http-header", "Client-ID=jzkbprff40iqj646a697cyrvl0zt2m6", "--player=mpv")
-	if chat {
-		cmd := exec.Command("google-chrome", "--chrome-frame", "--window-size=400,600", "--window-position=580,240", "--app=https://www.twitch.tv/popout/"+streamer+"/chat?popout=")
-		cmd.Start()
+	if streamer != "" {
+
+		livestreamer := exec.Command("livestreamer", "twitch.tv/"+streamer, quality, "--http-header", "Client-ID=jzkbprff40iqj646a697cyrvl0zt2m6", "--player=mpv")
+		if chat {
+			cmd := exec.Command("google-chrome", "--chrome-frame", "--window-size=400,600", "--window-position=580,240", "--app=https://www.twitch.tv/popout/"+streamer+"/chat?popout=")
+			cmd.Start()
+		}
+		livestreamer.Run()
+	} else {
+		callClear()
+		fmt.Println("You must choose a streamer")
+		os.Exit(1)
 	}
 
-	livestreamer.Run()
 }
