@@ -18,6 +18,8 @@ click result link
 login then authorize app
 
 get acccess_token from url
+
+export TWITCH_ACCESS_TOKEN="YOUR ACCESS TOKEN"
 ```
 
 # Screenshot
